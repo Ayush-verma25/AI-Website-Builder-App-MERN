@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="favGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Solid app icon base -->
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#favGrad)"/>
+  
+  <!-- AI Spark Icon centered -->
+  <path d="M32 10 L35 28 L53 31 L35 34 L32 52 L29 34 L11 31 L29 28 Z" fill="#ffffff"/>
+</svg>

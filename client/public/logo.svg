@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" width="400" height="120">
+  <defs>
+    <linearGradient id="aiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Outer glowing box representing the web layout -->
+  <rect x="20" y="30" width="60" height="60" rx="12" fill="url(#aiGrad)" opacity="0.2"/>
+  
+  <!-- Inner solid box -->
+  <rect x="30" y="40" width="40" height="40" rx="8" fill="url(#aiGrad)"/>
+  
+  <!-- AI Spark Icon -->
+  <path d="M50 25 L53 43 L71 46 L53 49 L50 67 L47 49 L29 46 L47 43 Z" fill="#ffffff"/>
+  
+  <!-- Typography -->
+  <text x="100" y="75" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="48" fill="#1e293b">Site<tspan fill="url(#aiGrad)">Spark</tspan></text>
+</svg>
