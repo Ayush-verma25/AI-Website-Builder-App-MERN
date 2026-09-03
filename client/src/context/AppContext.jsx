@@ -3,11 +3,13 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import api from "../api/api";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import debounce from "lodash.debounce";
 
 const AppContext = createContext(undefined);
 
@@ -29,7 +31,10 @@ export function AppContextProvider({ children }) {
   const [showCode, setShowCode] = useState(false);
 
   // Auth Actions
-  const checkSession = async () => {
+  // FIX: wrapped in useCallback with a stable (empty) dependency array so the
+  // reference doesn't change every render — this is what caused the infinite
+  // checkSession -> setState -> re-render -> new checkSession -> effect loop.
+  const checkSession = useCallback(async () => {
     try {
       const { data } = await api.get("/api/auth/me");
       setUser(data.user);
@@ -38,7 +43,7 @@ export function AppContextProvider({ children }) {
     } finally {
       setLoadingUser(false);
     }
-  };
+  }, []);
 
   const login = async (email, password) => {
     try {
@@ -88,7 +93,8 @@ export function AppContextProvider({ children }) {
   };
 
   // Project Actions
-  const loadProjects = async () => {
+  // FIX: wrapped in useCallback so consumers/effects get a stable reference.
+  const loadProjects = useCallback(async () => {
     if (!user) return;
     try {
       const { data } = await api.get("/api/projects");
@@ -99,35 +105,40 @@ export function AppContextProvider({ children }) {
     } finally {
       setLoadingProjects(false);
     }
-  };
+  }, [user]);
 
-  const loadProject = async (id, silent = false) => {
-    if (!user) return;
-    if (!silent) setLoadingActiveProject(true);
-    try {
-      const { data } = await api.get(`/api/projects/${id}`);
-      setActiveProject(data);
+  // FIX: wrapped in useCallback (stable reference for the polling effect below)
+  // and fixed two bugs inside: Object.Keys -> Object.keys, and the "/App.js"
+  // vs "App.js" mismatch.
+  const loadProject = useCallback(
+    async (id, silent = false) => {
+      if (!user) return;
+      if (!silent) setLoadingActiveProject(true);
+      try {
+        const { data } = await api.get(`/api/projects/${id}`);
+        setActiveProject(data);
 
-      //Default file Selection
-
-      const files = Object.Keys(data.files);
-      if (files.length > 0) {
-        setActiveFile((prev) => {
-          if (files.includes(prev)) return prev;
-          if (files.includes("/App.js")) return "App.js";
-          return files[0];
-        });
+        //Default file Selection
+        const files = Object.keys(data.files);
+        if (files.length > 0) {
+          setActiveFile((prev) => {
+            if (files.includes(prev)) return prev;
+            if (files.includes("/App.js")) return "/App.js";
+            return files[0];
+          });
+        }
+      } catch (err) {
+        console.log("Failed to load projects:", err);
+        if (!silent) {
+          toast.error("Failed to Load Projects Details");
+          navigate("/");
+        }
+      } finally {
+        if (!silent) setLoadingActiveProject(false);
       }
-    } catch (err) {
-      console.log("Failed to load projects:", err);
-      if (!silent) {
-        toast.error("Failed to Load Projects Details");
-        navigate("/");
-      }
-    } finally {
-      if (!silent) setLoadingActiveProject(false);
-    }
-  };
+    },
+    [user, navigate],
+  );
 
   // Automaticlly pull active project status if generating or pending
   useEffect(() => {
@@ -172,7 +183,10 @@ export function AppContextProvider({ children }) {
       if (!user) return;
       try {
         await api.delete(`/api/projects/${id}`);
-        setProjects((prev = prev.filter((p) => p._id !== id)));
+        // FIX: was `setProjects((prev = prev.filter(...)))`, a broken default
+        // parameter expression that threw "Cannot access 'prev' before
+        // initialization". This is the correct functional updater form.
+        setProjects((prev) => prev.filter((p) => p._id !== id));
         toast.success("Project Deleted");
       } catch (err) {
         console.log("Failed to delete project:", err);
@@ -182,9 +196,61 @@ export function AppContextProvider({ children }) {
     [user],
   );
 
+  const handleChat = useCallback(
+    async (prompt) => {
+      if (!activeProject || !user) return;
+      setChatLoading(true);
+      try {
+        const { data } = await api.post(
+          `/api/projects/${activeProject._id}/chat`,
+          { prompt },
+        );
+        setActiveProject(data);
+        if (data.error && data.error.length > 0) {
+          toast.error(`${data.error.length} revision patch(es) failed`);
+        } else {
+          toast.success(`Updated to Version ${data.version}`);
+        }
+      } catch (err) {
+        console.error("Revision Failed", err);
+        toast.error(err?.response?.data?.error || "Revision Failed");
+      } finally {
+        setChatLoading(false);
+      }
+    },
+    [activeProject, user],
+  );
+
+  const debouncedSave = useMemo(
+    () =>
+      debounce(async (files, id) => {
+        try {
+          await api.put(`/api/projects/${id}/files`, { files });
+        } catch (err) {
+          console.error("Failed to Autosave Project Files", err);
+          toast.error("Failed to Autosave Project Files");
+        }
+      }, 1000),
+    [],
+  );
+
+  const updateProjectFiles = useCallback(
+    async (files) => {
+      if (!activeProject || !user) return;
+      debouncedSave(files, activeProject._id);
+    },
+    [activeProject, user, debouncedSave],
+  );
+
   useEffect(() => {
     checkSession();
-  }, [checkSession]);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      debouncedSave.cancel();
+    };
+  }, [debouncedSave]);
 
   return (
     <AppContext.Provider
@@ -208,6 +274,8 @@ export function AppContextProvider({ children }) {
         handleGenerate,
         handleDelete,
         logout,
+        handleChat,
+        updateProjectFiles,
       }}
     >
       {children}
