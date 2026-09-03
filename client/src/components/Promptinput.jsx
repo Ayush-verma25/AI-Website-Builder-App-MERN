@@ -6,15 +6,15 @@ import {
   MicIcon,
 } from "lucide-react";
 
-const Promptinput = ({
+const PromptInput = ({
   onSubmit,
   loading = false,
-  placeholer = "Describe your website you want to build.",
+  placeholder = "Describe your website you want to build.",
   large = false,
   autoFocus = false,
-  varient = "default",
+  variant = "default",
 }) => {
-  const [value, SetValue] = useState("");
+  const [value, setValue] = useState("");
   const textareaRef = useRef(null);
 
   useEffect(() => {
@@ -28,7 +28,7 @@ const Promptinput = ({
     const trimmed = value.trim();
     if (!trimmed || loading) return;
     onSubmit(trimmed);
-    SetValue("");
+    setValue("");
   };
 
   const handleKeyDown = (e) => {
@@ -38,7 +38,7 @@ const Promptinput = ({
     }
   };
 
-  if (varient === "glass") {
+  if (variant === "glass") {
     return (
       <form
         onSubmit={handleSubmit}
@@ -47,9 +47,11 @@ const Promptinput = ({
         <textarea
           ref={textareaRef}
           value={value}
-          onChange={() => SetValue(e.targat.value)}
+          // FIX: was `() => SetValue(e.targat.value)` — `e` wasn't in scope
+          // (ReferenceError on every keystroke) and `target` was misspelled.
+          onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={placeholer}
+          placeholder={placeholder}
           disabled={loading}
           rows={3}
           className="w-full p-4 pb-2 resize-none placeholder:text-white/60 outline-none bg-transparent text-white text-base"
@@ -96,9 +98,10 @@ const Promptinput = ({
       <textarea
         ref={textareaRef}
         value={value}
-        onChange={() => SetValue(e.targat.value)}
+        // FIX: same missing-`e` / `targat` typo as above.
+        onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={placeholer}
+        placeholder={placeholder}
         disabled={loading}
         rows={large ? 5 : 1}
         className={`flex-1 bg-transparent border-none outline-none resize-none text-zinc-900 placeholder:text-zinc-400 ${large ? "text-base" : "text-sm"}`}
@@ -122,4 +125,4 @@ const Promptinput = ({
   );
 };
 
-export default Promptinput;
+export default PromptInput;
