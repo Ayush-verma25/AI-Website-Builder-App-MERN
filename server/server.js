@@ -4,10 +4,11 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { connectDB } from "./config/db.js";
 import authRouter from "./Routes/authRoutes.js";
+import projectRouter from "./Routes/projectRoutes.js";
 
 const app = express();
 
-connectDB();
+await connectDB();
 
 app.use(cors({ origin: process.env.ORIGINS.split(","), credentials: true }));
 app.use(cookieParser());
@@ -18,6 +19,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRouter);
+app.use("/api/projects", projectRouter)
 
 //Centralised error handling
 app.use((err, _req, res, _next) => {
