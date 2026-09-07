@@ -4,7 +4,7 @@ import { homeTags } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
 import { ArrowRightIcon, ClockIcon, Trash2Icon } from "lucide-react";
 import moment from "moment";
-import PromptInput from "../components/PromptInput";
+import PromptInput from "../components/Promptinput";
 
 const HomePage = () => {
   const navigate = useNavigate();
