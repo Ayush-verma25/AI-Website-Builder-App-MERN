@@ -97,34 +97,30 @@ export function AppContextProvider({children}){
         }
       }
 
-      const loadProject =  async (id, silent = false)=>{
-        console.log("load project");
-        
-        if(!user) return;
-        if (!silent) setLoadingActiveProject(true)
-            try {
-                const { data } = await api.get(`/api/projects/${id}`)
-                 setActiveProject(data);
-
-                 // Default file selection
-                 const files = Object.keys(data.files);
+    // Inside AppContextProvider
+const loadProject = useCallback(async (id, silent = false) => {
+    if (!user) return;
+    if (!silent) setLoadingActiveProject(true);
+    try {
+        const { data } = await api.get(`/api/projects/${id}`);
+        setActiveProject(data);
+        const files = Object.keys(data.files);
                  if(files.length > 0){
                     setActiveFile((prev)=>{
                         if(files.includes(prev)) return prev;
                         if(files.includes("/App.js"))  return "/App.js";
                         return files[0]
                     })
-                 }
-            } catch (err) {
-                console.error("Failed to load project:", err);
-                if(!silent){
-                    toast.error("Failed to load project details");
-                    navigate("/");
-                }
-            }finally{
-                if (!silent) setLoadingActiveProject(false)
-            }
-      }
+    } catch (err) {
+        console.error("Failed to load project:", err);
+        if (!silent) {
+            toast.error("Failed to load project details");
+            navigate("/");
+        }
+    } finally {
+        if (!silent) setLoadingActiveProject(false);
+    }
+}, [user, navigate]);
 
        // Automatically poll active project status if generating or pending
        useEffect(()=>{
