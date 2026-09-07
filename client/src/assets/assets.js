@@ -8,4 +8,13 @@ export const homeTags = [
         "Business Website",
         "Marketing Website",
         "Educational Website",
+        "Portfolio Website",
+        "E-commerce Website",
+        "Blog",
+        "Landing Page",
+        "Resume Website",
+        "Personal Website",
+        "Business Website",
+        "Marketing Website",
+        "Educational Website",
     ];

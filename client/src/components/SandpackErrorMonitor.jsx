@@ -1,28 +1,27 @@
-import { useSandpack } from "@codesandbox/sandpack-react";
-import React, { useEffect } from "react";
+import { useSandpack } from '@codesandbox/sandpack-react'
+import React, { useEffect } from 'react'
 
-const SandpackErrorMonitor = ({ onErrorChange }) => {
-  const { sandpack } = useSandpack();
-  const { error } = sandpack;
+const SandpackErrorMonitor = ({onErrorChange}) => {
+    const { sandpack } = useSandpack()
+    const {error} = sandpack;
 
-  useEffect(() => {
-    if (error) {
-      const msg = error.message || "";
-      const isNetworkError =
-        msg.includes("Failed to Fetch") ||
-        msg.includes("col.csbops.io") ||
-        msg.includes("ERR_CONNECTION_TIMED_OUT") ||
-        msg.includes("net::ERR");
+    useEffect(()=>{
+        if(error){
+            const msg = error.message || "";
+            const isNetworkError = 
+            msg.includes("Failed to fetch") || 
+            msg.includes("col.csbops.io") || 
+            msg.includes("ERR_CONNECTION_TIMED_OUT") ||
+            msg.includes("net::ERR");
 
-      if (isNetworkError) {
-        onErrorChange(false);
-        return;
-      }
-    }
-    onErrorChange(true);
-  }, [error, onErrorChange]);
+            if(isNetworkError){
+               onErrorChange(false);
+               return 
+            }
+        }
+        onErrorChange(true)
+    },[error, onErrorChange])
+  return null
+}
 
-  return null;
-};
-
-export default SandpackErrorMonitor;
+export default SandpackErrorMonitor
