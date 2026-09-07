@@ -1,21 +1,23 @@
 import jwt from "jsonwebtoken";
-import { User } from "../models/User.js"; // Ensure User is imported
 
-export async function authMiddleware(req, res, next) {
-    const token = req.cookies.token;
-    if (!token) return res.status(401).json({ error: "Access denied." });
+export function authMiddleware(req, res, next) {
+    const token = req.cookies?.token;
 
-    if (!process.env.JWT_SECRET) throw new Error("FATAL: JWT_SECRET missing");
+    if (!token) {
+        return res.status(401).json({ error: "Access denied. No session token provided." });
+    }
+
+    const secret = process.env.JWT_SECRET;
+    if (!secret && process.env.NODE_ENV === "production") {
+        console.error("CRITICAL: JWT_SECRET environment variable is missing in production.");
+        return res.status(500).json({ error: "Server configuration error." });
+    }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        // Production check: ensure user still exists
-        const user = await User.findById(decoded.userId).select("_id");
-        if (!user) throw new Error("User no longer exists");
-        
+        const decoded = jwt.verify(token, secret || "fallback_secret");
         req.user = decoded;
         next();
     } catch (err) {
-        res.status(401).json({ error: "Session expired or invalid." });
+        return res.status(401).json({ error: "Session expired or invalid. Please sign in again." });
     }
 }
