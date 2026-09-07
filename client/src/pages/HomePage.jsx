@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useAppContext } from "../context/AppContext";
-import PromptInput from "../components/PromptInput";
+import PromptInput from "../components/PromptInput.jsx";
 import { homeTags } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
 import { ArrowRightIcon, ClockIcon, Trash2Icon } from "lucide-react";
