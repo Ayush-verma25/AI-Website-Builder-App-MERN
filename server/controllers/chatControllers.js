@@ -29,19 +29,26 @@ export async function chat(req, res) {
     return;
   }
 
-  const project = await Project.findOne({
-    _id: req.params.id,
-    owner: req.user.userId,
-  });
+  let project;
+  try {
+    project = await Project.findOne({
+      _id: req.params.id,
+      owner: req.user.userId,
+    });
+  } catch (err) {
+    // Catches invalid ObjectId format and other lookup errors
+    res.status(400).json({ error: "Invalid project id" });
+    return;
+  }
 
   if (!project) {
     res.status(404).json({ error: "Project not found" });
     return;
   }
 
-  //Set status to revising and save user prompt immidiately
+  // Set status to revising and save user prompt immediately
   project.status = "revising";
-  project.message.push({
+  project.messages.push({
     role: "user",
     content: prompt,
     timestamp: new Date(),
@@ -49,23 +56,24 @@ export async function chat(req, res) {
   await project.save();
 
   try {
-    // Build Compact manifest (path + hash + size)insted of sending all code
+    // Build compact manifest (path + hash + size) instead of sending all code
     const manifest = buildManifest(project.files);
 
-    //Include All file contents so the AI can do accuratesearch/replace
+    // Include all file contents so the AI can do accurate search/replace
     const relevantFiles = {};
 
     for (const [path, entry] of Object.entries(project.files)) {
       relevantFiles[path] = entry.content;
     }
 
-    // Recent messages fo content(at most 4
-    const recentMessages = project.message.slice(-4).map((m) => ({
+    // Recent message history for context (at most 4), excluding the prompt
+    // we're about to send separately, since it was just pushed above
+    const recentMessages = project.messages.slice(-5, -1).map((m) => ({
       role: m.role,
       content: m.content,
     }));
 
-    //Call Ai with menefest +relevent files
+    // Call AI with manifest + relevant files
     const result = await reviseProject(
       prompt,
       manifest,
@@ -77,28 +85,30 @@ export async function chat(req, res) {
       `[AI] Got ${result.operations.length} operations: ${result.description}`,
     );
 
-    //Apply opertaions to project files
-    const { files, updatedFiles, applied, errors } = applyOperations(
-      project.files,
-      result.operations,
-    );
+    // Apply operations to project files
+    const {
+      files: updatedFiles,
+      applied,
+      errors,
+    } = applyOperations(project.files, result.operations);
 
     if (errors.length > 0) {
       console.warn(`[Diff] Errors while applying operations:`, errors);
     }
 
-    //Update Project in DB
+    // Update project in DB
     project.files = updatedFiles;
     project.markModified("files");
     project.version += 1;
     project.status = "completed";
-    project.message.push({
+    project.messages.push({
       role: "assistant",
       content:
         result.description +
         (errors.length > 0
-          ? `\n\n Some Operations Failed: ${errors.join(", ")}`
+          ? `\n\nSome operations failed: ${errors.join(", ")}`
           : ""),
+      timestamp: new Date(),
     });
 
     await project.save();
@@ -114,7 +124,7 @@ export async function chat(req, res) {
       name: project.name,
       description: project.description,
       files: filesObj,
-      message: project.message,
+      messages: project.messages,
       version: project.version,
       status: project.status,
       applied,
@@ -123,7 +133,12 @@ export async function chat(req, res) {
     });
   } catch (err) {
     console.error(`[AI Revision Error] ${err.message}`);
-    project.status = "completed";
+    project.status = "failed";
+    project.messages.push({
+      role: "assistant",
+      content: "Sorry, something went wrong while processing that request.",
+      timestamp: new Date(),
+    });
     await project.save();
     res
       .status(500)

@@ -9,7 +9,7 @@ import {
 const PromptInput = ({
   onSubmit,
   loading = false,
-  placeholder = "Describe your website you want to build.",
+  placeholder = "Describe the website you want to build...",
   large = false,
   autoFocus = false,
   variant = "default",
@@ -47,8 +47,6 @@ const PromptInput = ({
         <textarea
           ref={textareaRef}
           value={value}
-          // FIX: was `() => SetValue(e.targat.value)` — `e` wasn't in scope
-          // (ReferenceError on every keystroke) and `target` was misspelled.
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
@@ -65,7 +63,6 @@ const PromptInput = ({
             <input type="file" id="file" hidden />
             <CloudUploadIcon size={18} />
           </label>
-
           <div className="flex items-center justify-end gap-2">
             <button
               type="button"
@@ -98,7 +95,6 @@ const PromptInput = ({
       <textarea
         ref={textareaRef}
         value={value}
-        // FIX: same missing-`e` / `targat` typo as above.
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
@@ -106,6 +102,7 @@ const PromptInput = ({
         rows={large ? 5 : 1}
         className={`flex-1 bg-transparent border-none outline-none resize-none text-zinc-900 placeholder:text-zinc-400 ${large ? "text-base" : "text-sm"}`}
       />
+
       <button
         onClick={() => handleSubmit()}
         disabled={!value.trim() || loading}
